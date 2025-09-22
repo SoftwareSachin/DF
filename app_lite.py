@@ -130,6 +130,7 @@ class DeepFakeDetectionSystem:
         try:
             # Load OpenCV's pre-trained Haar cascade for face detection
             try:
+                import cv2
                 cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
                 face_cascade = cv2.CascadeClassifier(cascade_path)
                 if face_cascade.empty():
@@ -510,7 +511,7 @@ class DeepFakeDetectionSystem:
             st.write("**Bounding Boxes:**")
             face_data = faces['bounding_boxes']
             if face_data:
-                face_df = pd.DataFrame(data=face_data, columns=['X', 'Y', 'Width', 'Height'])
+                face_df = pd.DataFrame(face_data, columns=['X', 'Y', 'Width', 'Height'])
             else:
                 face_df = pd.DataFrame(columns=['X', 'Y', 'Width', 'Height'])
             st.dataframe(face_df)
