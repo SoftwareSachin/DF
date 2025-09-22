@@ -21,41 +21,30 @@ from io import BytesIO
 # Page configuration
 st.set_page_config(
     page_title="Deep Fake Detection System",
-    page_icon="🔍",
+    page_icon=None,
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS for better styling
+# Custom CSS for professional styling
 st.markdown("""
 <style>
     .main-header {
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        padding: 1rem;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-    }
-    .metric-card {
         background: #f8f9fa;
         padding: 1rem;
-        border-radius: 8px;
-        border-left: 4px solid #667eea;
-        margin: 0.5rem 0;
+        border: 1px solid #dee2e6;
+        margin-bottom: 2rem;
     }
     .detection-result {
         padding: 1rem;
-        border-radius: 8px;
         margin: 1rem 0;
-    }
-    .demo-result {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
+        border: 1px solid #dee2e6;
+        background: #ffffff;
     }
     .analysis-section {
         background: #ffffff;
-        padding: 1.5rem;
-        border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 1rem;
+        border: 1px solid #dee2e6;
         margin: 1rem 0;
     }
 </style>
@@ -72,24 +61,22 @@ class DeepFakeDetectionDemo:
         """Render the application header."""
         st.markdown("""
         <div class="main-header">
-            <h1 style="color: white; margin: 0;">🔍 Deep Fake Detection System (Demo)</h1>
-            <p style="color: white; margin: 0; opacity: 0.9;">
-                Demo version - Basic image and video analysis without AI models
+            <h1 style="color: #343a40; margin: 0;">Deep Fake Detection System</h1>
+            <p style="color: #6c757d; margin: 0;">
+                Image and video analysis platform
             </p>
         </div>
         """, unsafe_allow_html=True)
     
     def render_sidebar(self):
         """Render the sidebar with configuration options."""
-        st.sidebar.title("⚙️ Analysis Settings")
-        
-        st.sidebar.info("🚧 **Demo Mode**: This is a demonstration version. For production use with AI models, TensorFlow and dlib dependencies need to be installed.")
+        st.sidebar.title("Analysis Settings")
         
         # Analysis options
-        st.sidebar.subheader("Available Analysis")
-        analyze_metadata = st.sidebar.checkbox("Analyze Metadata", value=True)
-        analyze_properties = st.sidebar.checkbox("Analyze Image Properties", value=True)
-        basic_face_detection = st.sidebar.checkbox("Basic Face Detection (OpenCV)", value=True)
+        st.sidebar.subheader("Configuration")
+        analyze_metadata = st.sidebar.checkbox("Metadata Analysis", value=True)
+        analyze_properties = st.sidebar.checkbox("Image Properties", value=True)
+        basic_face_detection = st.sidebar.checkbox("Face Detection", value=True)
         
         return {
             'analyze_metadata': analyze_metadata,
@@ -312,13 +299,13 @@ class DeepFakeDetectionDemo:
         return {
             'confidence': final_score,
             'components': score_components,
-            'message': 'This is a demo analysis. For production use, AI models would provide detailed deep fake detection.'
+            'message': 'Analysis completed using basic detection methods.'
         }
     
     def render_results(self, results: Dict, file_type: str):
         """Render analysis results."""
         if 'error' in results:
-            st.error(f"❌ {results['error']}")
+            st.error(f"Error: {results['error']}")
             return
         
         # Main demo result
@@ -327,18 +314,18 @@ class DeepFakeDetectionDemo:
         
         # Display main result
         st.markdown(f"""
-        <div class="detection-result demo-result">
-            <h2>📊 Demo Analysis Complete</h2>
+        <div class="detection-result">
+            <h2>Analysis Complete</h2>
             <h3>Confidence Score: {confidence:.1%}</h3>
-            <p><em>{demo_analysis.get('message', 'Basic analysis completed')}</em></p>
+            <p>{demo_analysis.get('message', 'Analysis completed successfully')}</p>
         </div>
         """, unsafe_allow_html=True)
         
         # Create tabs for different analyses
         if file_type == "image":
-            tabs = st.tabs(["📊 Overview", "🖼️ Image Properties", "👤 Face Analysis", "📋 Metadata"])
+            tabs = st.tabs(["Overview", "Image Properties", "Face Analysis", "Metadata"])
         else:
-            tabs = st.tabs(["📊 Overview", "🎬 Video Properties", "👤 Face Analysis", "📈 Frame Analysis"])
+            tabs = st.tabs(["Overview", "Video Properties", "Face Analysis", "Frame Analysis"])
         
         # Overview tab
         with tabs[0]:
@@ -369,7 +356,7 @@ class DeepFakeDetectionDemo:
         col1, col2, col3 = st.columns(3)
         
         with col1:
-            st.metric("Demo Confidence", f"{demo_analysis.get('confidence', 0):.1%}")
+            st.metric("Confidence Score", f"{demo_analysis.get('confidence', 0):.1%}")
         
         with col2:
             analysis_count = len([k for k in ['faces', 'properties', 'metadata'] if k in results])
@@ -382,7 +369,7 @@ class DeepFakeDetectionDemo:
             st.metric("Faces Found", faces_detected)
         
         # Component breakdown
-        st.subheader("📈 Analysis Components")
+        st.subheader("Analysis Components")
         components = demo_analysis.get('components', [])
         if components:
             fig = px.bar(
@@ -403,14 +390,14 @@ class DeepFakeDetectionDemo:
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("📐 Basic Properties")
+            st.subheader("Basic Properties")
             st.write(f"**Dimensions:** {properties['dimensions']}")
             st.write(f"**Channels:** {properties['channels']}")
             st.write(f"**Data Type:** {properties['dtype']}")
             st.write(f"**Estimated Size:** {properties['file_size_estimate']:,} bytes")
         
         with col2:
-            st.subheader("🎨 Color Analysis")
+            st.subheader("Color Analysis")
             st.write(f"**Mean Brightness:** {properties['brightness_mean']:.2f}")
             st.write(f"**Brightness Std:** {properties['brightness_std']:.2f}")
             
@@ -430,7 +417,7 @@ class DeepFakeDetectionDemo:
         
         faces = results['faces']
         
-        st.subheader("👤 Face Detection Results")
+        st.subheader("Face Detection Results")
         st.write(f"**Faces Detected:** {faces['count']}")
         
         if faces['count'] > 0:
@@ -454,7 +441,7 @@ class DeepFakeDetectionDemo:
         
         metadata = results['metadata']
         
-        st.subheader("📋 Image Metadata")
+        st.subheader("Image Metadata")
         
         for key, value in metadata.items():
             if key != 'error':
@@ -474,13 +461,13 @@ class DeepFakeDetectionDemo:
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader("🎬 Video Properties")
+            st.subheader("Video Properties")
             st.write(f"**FPS:** {props['fps']:.2f}")
             st.write(f"**Total Frames:** {props['frame_count']:,}")
             st.write(f"**Duration:** {props['duration']:.2f} seconds")
         
         with col2:
-            st.subheader("📐 Video Dimensions")
+            st.subheader("Video Dimensions")
             st.write(f"**Resolution:** {props['resolution']}")
     
     def render_video_face_analysis_tab(self, results: Dict):
@@ -491,7 +478,7 @@ class DeepFakeDetectionDemo:
         
         face_analysis = results['faces_analysis']
         
-        st.subheader("👤 Video Face Analysis")
+        st.subheader("Video Face Analysis")
         
         col1, col2, col3 = st.columns(3)
         
@@ -512,7 +499,7 @@ class DeepFakeDetectionDemo:
         
         temporal = results['temporal_analysis']
         
-        st.subheader("📈 Temporal Analysis")
+        st.subheader("Temporal Analysis")
         
         col1, col2 = st.columns(2)
         
@@ -530,20 +517,20 @@ class DeepFakeDetectionDemo:
         settings = self.render_sidebar()
         
         # Main content
-        st.subheader("📤 Upload File for Analysis")
+        st.subheader("File Upload")
         
-        tab1, tab2 = st.tabs(["📷 Image Analysis", "🎥 Video Analysis"])
+        tab1, tab2 = st.tabs(["Image Analysis", "Video Analysis"])
         
         with tab1:
             uploaded_image = st.file_uploader(
                 "Choose an image file",
                 type=['jpg', 'jpeg', 'png', 'bmp', 'tiff'],
-                help="Upload an image file for basic analysis"
+                help="Upload an image file for analysis"
             )
             
             if uploaded_image is not None:
                 # Display uploaded image
-                st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_column_width=True)
+                st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_container_width=True)
                 
                 # Process image
                 with st.spinner("Analyzing image..."):
@@ -556,12 +543,12 @@ class DeepFakeDetectionDemo:
             uploaded_video = st.file_uploader(
                 "Choose a video file",
                 type=['mp4', 'avi', 'mov', 'mkv', 'webm'],
-                help="Upload a video file for basic analysis"
+                help="Upload a video file for analysis"
             )
             
             if uploaded_video is not None:
                 # Process video
-                with st.spinner("Analyzing video... This may take a moment."):
+                with st.spinner("Analyzing video..."):
                     results = self.process_video(uploaded_video, settings)
                 
                 # Display results
