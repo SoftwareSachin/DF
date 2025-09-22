@@ -4,12 +4,13 @@ Implements state-of-the-art deep fake detection using multiple AI techniques
 """
 import numpy as np
 import cv2
-import tensorflow as tf
-from tensorflow import keras
-from tensorflow.keras.applications import EfficientNetB0, MobileNetV2
-from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
-from tensorflow.keras.models import Model
-import mediapipe as mp
+# Simplified version without heavy AI dependencies
+# import tensorflow as tf
+# from tensorflow import keras
+# from tensorflow.keras.applications import EfficientNetB0, MobileNetV2
+# from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+# from tensorflow.keras.models import Model
+# import mediapipe as mp
 from scipy import fft
 from sklearn.ensemble import IsolationForest
 from sklearn.preprocessing import StandardScaler
@@ -31,32 +32,10 @@ class EfficientNetDeepFakeDetector:
     def create_model(self):
         """Create EfficientNet-based detection model with proper configuration"""
         try:
-            # Create a simple CNN instead of using problematic pretrained weights
-            from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten
-            from tensorflow.keras import Sequential
-            
-            self.model = Sequential([
-                Conv2D(32, (3, 3), activation='relu', input_shape=(*self.input_size, 3)),
-                MaxPooling2D((2, 2)),
-                Conv2D(64, (3, 3), activation='relu'),
-                MaxPooling2D((2, 2)),
-                Conv2D(128, (3, 3), activation='relu'),
-                GlobalAveragePooling2D(),
-                Dense(512, activation='relu'),
-                Dropout(0.3),
-                Dense(256, activation='relu'),
-                Dropout(0.3),
-                Dense(1, activation='sigmoid')
-            ])
-            
-            self.model.compile(
-                optimizer='adam',
-                loss='binary_crossentropy',
-                metrics=['accuracy']
-            )
-            
-            logger.info("EfficientNet-style model created successfully")
-            return self.model
+            # Lightweight version - no TensorFlow model creation
+            logger.info("Using lightweight feature-based detection instead of neural network")
+            self.model = None  # Will use feature analysis
+            return None
             
         except Exception as e:
             logger.error(f"Failed to create model: {e}")
@@ -71,20 +50,8 @@ class EfficientNetDeepFakeDetector:
             if self.model is None:
                 self.create_model()
             
-            if self.model is None:
-                # Fallback to simple feature analysis
-                confidence = self._simple_feature_analysis(image)
-            else:
-                # Preprocess image
-                processed_image = self._preprocess_image(image)
-                
-                # Predict using the model
-                try:
-                    prediction = self.model.predict(processed_image, verbose=0)
-                    confidence = float(prediction[0][0])
-                except Exception as e:
-                    logger.warning(f"Model prediction failed: {e}")
-                    confidence = self._simple_feature_analysis(image)
+            # Use feature analysis instead of neural network
+            confidence = self._simple_feature_analysis(image)
             
             inference_time = time.time() - start_time
             is_fake = confidence > self.confidence_threshold
@@ -188,34 +155,10 @@ class MobileNetDeepFakeDetector:
     def create_model(self):
         """Create MobileNet-based detection model"""
         try:
-            from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, BatchNormalization, MaxPooling2D
-            from tensorflow.keras import Sequential
-            
-            # Create a lightweight CNN inspired by MobileNet
-            self.model = Sequential([
-                Conv2D(32, (3, 3), activation='relu', input_shape=(*self.input_size, 3)),
-                BatchNormalization(),
-                DepthwiseConv2D((3, 3), activation='relu'),
-                BatchNormalization(),
-                Conv2D(64, (1, 1), activation='relu'),
-                MaxPooling2D((2, 2)),
-                DepthwiseConv2D((3, 3), activation='relu'),
-                BatchNormalization(),
-                Conv2D(128, (1, 1), activation='relu'),
-                GlobalAveragePooling2D(),
-                Dense(256, activation='relu'),
-                Dropout(0.3),
-                Dense(1, activation='sigmoid')
-            ])
-            
-            self.model.compile(
-                optimizer='adam',
-                loss='binary_crossentropy',
-                metrics=['accuracy']
-            )
-            
-            logger.info("MobileNet-style model created successfully")
-            return self.model
+            # Lightweight version - no TensorFlow model creation
+            logger.info("Using lightweight feature-based detection instead of MobileNet neural network")
+            self.model = None  # Will use feature analysis
+            return None
             
         except Exception as e:
             logger.error(f"Failed to create MobileNet model: {e}")
@@ -411,60 +354,50 @@ class FrequencyDomainAnalyzer:
         }
 
 class MediaPipeFaceAnalyzer:
-    """Advanced face analysis using MediaPipe"""
+    """Lightweight face analysis without MediaPipe"""
     
     def __init__(self):
-        self.mp_face_mesh = mp.solutions.face_mesh
-        self.mp_face_detection = mp.solutions.face_detection
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
-            static_image_mode=True,
-            max_num_faces=5,
-            refine_landmarks=True,
-            min_detection_confidence=0.5
-        )
-        self.face_detection = self.mp_face_detection.FaceDetection(
-            model_selection=1, min_detection_confidence=0.5
-        )
+        # Lightweight version without MediaPipe
+        logger.info("Using OpenCV-based face detection instead of MediaPipe")
+        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
         
     def analyze_facial_landmarks(self, image: np.ndarray) -> Dict:
-        """Advanced facial landmark analysis"""
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        """Lightweight facial analysis using OpenCV"""
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # Face mesh analysis
-        mesh_results = self.face_mesh.process(rgb_image)
-        
-        # Face detection
-        detection_results = self.face_detection.process(rgb_image)
+        # Use OpenCV Haar cascades for face detection
+        faces = self.face_cascade.detectMultiScale(gray, 1.1, 4)
         
         analysis = {
-            'faces_detected': 0,
+            'faces_detected': len(faces),
             'landmark_analysis': [],
             'geometric_analysis': {},
-            'quality_metrics': {}
+            'quality_metrics': {'avg_detection_confidence': 0.7 if len(faces) > 0 else 0.0}
         }
         
-        if mesh_results.multi_face_landmarks:
-            analysis['faces_detected'] = len(mesh_results.multi_face_landmarks)
+        # Basic face analysis for each detected face
+        for (x, y, w, h) in faces:
+            face_roi = gray[y:y+h, x:x+w]
             
-            for face_landmarks in mesh_results.multi_face_landmarks:
-                landmarks = self._extract_key_landmarks(face_landmarks, image.shape)
-                geometric_metrics = self._analyze_facial_geometry(landmarks)
-                quality_metrics = self._analyze_landmark_quality(landmarks)
-                
-                analysis['landmark_analysis'].append({
-                    'landmarks': landmarks,
-                    'geometry': geometric_metrics,
-                    'quality': quality_metrics
-                })
-        
-        # Overall analysis
-        if analysis['landmark_analysis']:
-            analysis['geometric_analysis'] = self._overall_geometric_analysis(
-                analysis['landmark_analysis']
-            )
-            analysis['quality_metrics'] = self._overall_quality_analysis(
-                analysis['landmark_analysis']
-            )
+            # Simple geometric analysis
+            geometric_metrics = {
+                'face_width': w,
+                'face_height': h,
+                'aspect_ratio': w / h if h > 0 else 1.0
+            }
+            
+            # Basic quality metrics
+            quality_metrics = {
+                'brightness': np.mean(face_roi),
+                'contrast': np.std(face_roi),
+                'sharpness': cv2.Laplacian(face_roi, cv2.CV_64F).var()
+            }
+            
+            analysis['landmark_analysis'].append({
+                'landmarks': {'bbox': (x, y, w, h)},
+                'geometry': geometric_metrics,
+                'quality': quality_metrics
+            })
         
         return analysis
     
@@ -596,7 +529,7 @@ class EnsembleDeepFakeDetector:
             'efficientnet': 0.35,
             'mobilenet': 0.25,
             'frequency': 0.20,
-            'face_geometry': 0.20
+            # 'face_geometry': 0.20  # Disabled for lightweight version
         }
         
     def detect_deepfake(self, image: np.ndarray) -> Dict:
@@ -682,15 +615,13 @@ class EnsembleDeepFakeDetector:
             confidences.append(freq_confidence)
             weights.append(self.weights['frequency'])
         
-        # Face geometry confidence
-        face_pred = predictions.get('face_analysis', {})
-        if 'quality_metrics' in face_pred and 'error' not in face_pred:
-            # Use detection confidence as indicator
-            face_confidence = face_pred['quality_metrics'].get('avg_detection_confidence', 0.5)
-            # Convert to deepfake confidence (lower face quality = higher fake probability)
-            face_deepfake_confidence = 1.0 - min(1.0, face_confidence)
-            confidences.append(face_deepfake_confidence)
-            weights.append(self.weights['face_geometry'])
+        # Face geometry confidence - disabled for lightweight version
+        # face_pred = predictions.get('face_analysis', {})
+        # if 'quality_metrics' in face_pred and 'error' not in face_pred:
+        #     face_confidence = face_pred['quality_metrics'].get('avg_detection_confidence', 0.5)
+        #     face_deepfake_confidence = 1.0 - min(1.0, face_confidence)
+        #     confidences.append(face_deepfake_confidence)
+        #     weights.append(self.weights['face_geometry'])
         
         # Calculate weighted average
         if confidences and weights:
