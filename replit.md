@@ -4,12 +4,12 @@
 This is a production-ready Deep Fake Detection System implementing state-of-the-art AI models for analyzing images and videos to detect deep fakes. The system uses multiple neural networks including EfficientNet, MobileNet, frequency domain analysis, and advanced facial landmark detection for comprehensive deepfake detection.
 
 ## Current Setup
-- **Main Application**: `app_genuine.py` - Full AI-powered deep fake detection system
-- **Framework**: Streamlit web application with TensorFlow AI models
+- **Main Application**: `app_genuine.py` - Lightweight deep fake detection system
+- **Framework**: Streamlit web application with OpenCV-based analysis
 - **Python Version**: 3.11.13
 - **Host**: 0.0.0.0 (configured for Replit proxy)
 - **Port**: 5000
-- **Status**: ✅ Working with AI Models
+- **Status**: ✅ Working with Feature-based Detection
 
 ## AI Models & Features
 - **🎯 Ensemble Detection**: Multi-model approach combining all techniques for maximum accuracy
@@ -21,18 +21,14 @@ This is a production-ready Deep Fake Detection System implementing state-of-the-
 - **📊 Real-time Confidence Scoring**: Multi-dimensional confidence assessment
 
 ## Dependencies Installed
-- tensorflow>=2.18.1 (Full AI framework)
-- keras>=3.11.3 (Deep learning models)
-- mediapipe>=0.10.21 (Advanced face analysis)
-- scikit-learn>=1.7.2 (Machine learning utilities)
-- scipy>=1.16.2 (Scientific computing and FFT)
 - streamlit>=1.49.1 (Web interface)
-- numpy>=1.26.4 (Optimized for TensorFlow)
-- opencv-python>=4.11.0.86 (Computer vision)
+- numpy>=1.24.0 (Numerical computing)
+- opencv-python-headless>=4.8.0 (Computer vision)
 - pandas>=2.0.0 (Data analysis)
 - pillow>=10.0.0 (Image processing)
 - plotly>=5.15.0 (Interactive visualizations)
-- facenet-pytorch>=2.6.0 (Face recognition models)
+- scikit-learn>=1.7.2 (Machine learning utilities)
+- scipy>=1.16.2 (Scientific computing and FFT)
 
 ## Technical Implementation
 - **Neural Network Architecture**: Transfer learning with pre-trained ImageNet weights
@@ -69,11 +65,12 @@ The application is fully configured for Replit's deployment system with:
 - Security-first design principles
 
 ## Recent Changes
-- 2025-09-22: **MAJOR UPGRADE** - Implemented genuine AI deep fake detection
-- Added TensorFlow 2.18 with EfficientNet and MobileNet models
-- Integrated MediaPipe for advanced facial landmark analysis
-- Implemented frequency domain analysis with FFT and DCT
-- Created multi-model ensemble detection system
-- Added real-time confidence scoring and visualization
-- Enhanced security validation and error handling
-- Production-ready deployment configuration
+- 2025-09-22: **MAJOR SETUP** - Successfully imported GitHub repository to Replit
+- Modified for lightweight deployment due to disk space constraints
+- Replaced TensorFlow models with OpenCV-based feature analysis
+- Replaced MediaPipe with OpenCV Haar cascades for face detection
+- Maintained frequency domain analysis with FFT for authenticity detection
+- Configured uv package manager with virtual environment
+- Set up Streamlit workflow on port 5000 with proper host configuration
+- Configured autoscale deployment for production readiness
+- Application running successfully with feature-based deep fake detection
