@@ -177,9 +177,20 @@ class GenuineDeepFakeDetectionSystem:
         """Render the sidebar with detection model options."""
         st.sidebar.title("Settings")
         
+        # Media type selection
+        media_type = st.sidebar.radio("Media Type", ["Image", "Video"], index=0)
+        
         # Main options
         use_ensemble = st.sidebar.checkbox("Ensemble Detection (Recommended)", value=True)
         confidence_threshold = st.sidebar.slider("Confidence Threshold", 0.1, 0.9, 0.5, 0.1)
+        
+        # Video specific options
+        if media_type == "Video":
+            frame_skip = st.sidebar.slider("Frame Skip (process every Nth frame)", 1, 30, 5)
+            max_frames = st.sidebar.slider("Max Frames to Analyze", 10, 300, 50)
+        else:
+            frame_skip = 1
+            max_frames = 1
         
         # Advanced options in expander
         with st.sidebar.expander("Advanced Options"):
@@ -190,13 +201,16 @@ class GenuineDeepFakeDetectionSystem:
             max_faces = st.sidebar.slider("Max Faces to Analyze", 1, 10, 5)
         
         return {
+            'media_type': media_type,
             'use_ensemble': use_ensemble,
             'use_efficientnet': use_efficientnet,
             'use_mobilenet': use_mobilenet,
             'use_frequency': use_frequency,
             'use_face_analysis': use_face_analysis,
             'confidence_threshold': confidence_threshold,
-            'max_faces': max_faces
+            'max_faces': max_faces,
+            'frame_skip': frame_skip,
+            'max_frames': max_frames
         }
     
     def validate_image_security(self, image_bytes: bytes) -> Dict[str, any]:
@@ -279,6 +293,105 @@ class GenuineDeepFakeDetectionSystem:
         except Exception as e:
             logger.error(f"AI image processing error: {e}")
             return {'error': f'Error processing image with AI: {str(e)}'}
+    
+    def process_video_with_ai(self, video_bytes: bytes, filename: str, settings: Dict) -> Dict:
+        """Process uploaded video with genuine AI deep fake detection."""
+        try:
+            logger.info(f"Processing video with AI models: {filename}")
+            
+            # Save video to temporary file
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as temp_video:
+                temp_video.write(video_bytes)
+                temp_video_path = temp_video.name
+            
+            try:
+                # Open video file
+                cap = cv2.VideoCapture(temp_video_path)
+                if not cap.isOpened():
+                    return {'error': 'Could not open video file'}
+                
+                total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                fps = cap.get(cv2.CAP_PROP_FPS)
+                
+                frame_results = []
+                frame_confidences = []
+                frames_processed = 0
+                frame_count = 0
+                
+                while cap.isOpened() and frames_processed < settings['max_frames']:
+                    ret, frame = cap.read()
+                    if not ret:
+                        break
+                    
+                    # Process every Nth frame based on frame_skip setting
+                    if frame_count % settings['frame_skip'] == 0:
+                        # Process frame with AI models
+                        _, buffer = cv2.imencode('.jpg', frame)
+                        frame_bytes = buffer.tobytes()
+                        
+                        frame_result = self.process_image_with_ai_bytes(frame_bytes, f"frame_{frame_count}", settings)
+                        
+                        if 'error' not in frame_result:
+                            frame_results.append({
+                                'frame_number': frame_count,
+                                'timestamp': frame_count / fps if fps > 0 else 0,
+                                'analysis': frame_result
+                            })
+                            
+                            overall_confidence = frame_result.get('overall_analysis', {}).get('overall_confidence', 0.5)
+                            frame_confidences.append(overall_confidence)
+                            
+                        frames_processed += 1
+                    
+                    frame_count += 1
+                
+                cap.release()
+                
+                # Calculate video-level statistics
+                if frame_confidences:
+                    avg_confidence = np.mean(frame_confidences)
+                    max_confidence = np.max(frame_confidences)
+                    min_confidence = np.min(frame_confidences)
+                    confidence_std = np.std(frame_confidences)
+                    
+                    # Determine if video contains deepfakes
+                    suspicious_frames = sum(1 for c in frame_confidences if c > settings['confidence_threshold'])
+                    suspicious_ratio = suspicious_frames / len(frame_confidences)
+                    
+                    video_is_fake = suspicious_ratio > 0.3  # If >30% of frames are suspicious
+                    
+                    results = {
+                        'video_info': {
+                            'total_frames': total_frames,
+                            'fps': fps,
+                            'frames_processed': frames_processed,
+                            'frame_skip': settings['frame_skip']
+                        },
+                        'frame_results': frame_results,
+                        'video_analysis': {
+                            'avg_confidence': avg_confidence,
+                            'max_confidence': max_confidence,
+                            'min_confidence': min_confidence,
+                            'confidence_std': confidence_std,
+                            'suspicious_frames': suspicious_frames,
+                            'suspicious_ratio': suspicious_ratio,
+                            'is_deepfake': video_is_fake,
+                            'overall_confidence': avg_confidence
+                        }
+                    }
+                    
+                    return results
+                else:
+                    return {'error': 'No frames could be processed successfully'}
+                    
+            finally:
+                # Clean up temporary file
+                if os.path.exists(temp_video_path):
+                    os.unlink(temp_video_path)
+                    
+        except Exception as e:
+            logger.error(f"Video processing error: {e}")
+            return {'error': f'Error processing video with AI: {str(e)}'}
     
     def _calculate_overall_confidence(self, predictions: Dict, settings: Dict) -> Dict:
         """Calculate overall deep fake confidence from all models."""
@@ -453,7 +566,7 @@ class GenuineDeepFakeDetectionSystem:
                 height=400
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
     
     def render_technical_analysis_tab(self, results: Dict):
         """Render technical analysis details."""
@@ -549,7 +662,7 @@ class GenuineDeepFakeDetectionSystem:
                 yaxis_title="Frequency"
             )
             
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
     
     def render_details_tab(self, results: Dict):
         """Render detailed analysis results."""
@@ -563,7 +676,7 @@ class GenuineDeepFakeDetectionSystem:
         if model_results:
             st.subheader("Model Results")
             df = pd.DataFrame(model_results)
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, width='stretch')
         
         # Technical Details (in expanders)
         if 'frequency_analysis' in analysis_details:
@@ -608,6 +721,101 @@ class GenuineDeepFakeDetectionSystem:
                     st.write(f"- Faces: {pred.get('faces_detected', 0)}")
                 st.write("---")
     
+    def render_video_results(self, results: Dict):
+        """Render video analysis results with frame-by-frame breakdown."""
+        if 'error' in results:
+            st.error(f"Error: {results['error']}")
+            return
+        
+        video_analysis = results.get('video_analysis', {})
+        video_info = results.get('video_info', {})
+        frame_results = results.get('frame_results', [])
+        
+        # Main video detection result
+        overall_confidence = video_analysis.get('overall_confidence', 0.5)
+        is_deepfake = video_analysis.get('is_deepfake', False)
+        suspicious_ratio = video_analysis.get('suspicious_ratio', 0.0)
+        
+        if is_deepfake:
+            st.error(f"DEEPFAKE DETECTED IN VIDEO - Confidence: {overall_confidence:.1%}")
+            st.warning(f"{suspicious_ratio:.1%} of analyzed frames contain suspicious content")
+        else:
+            st.success(f"VIDEO APPEARS AUTHENTIC - Confidence: {(1-overall_confidence):.1%}")
+        
+        # Video information
+        st.subheader("Video Analysis Summary")
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Total Frames", f"{video_info.get('total_frames', 0):,}")
+        with col2:
+            st.metric("Processed Frames", video_info.get('frames_processed', 0))
+        with col3:
+            st.metric("Suspicious Frames", video_analysis.get('suspicious_frames', 0))
+        with col4:
+            st.metric("Video FPS", f"{video_info.get('fps', 0):.1f}")
+        
+        # Confidence statistics
+        st.subheader("Confidence Statistics")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.metric("Average Confidence", f"{video_analysis.get('avg_confidence', 0):.1%}")
+        with col2:
+            st.metric("Max Confidence", f"{video_analysis.get('max_confidence', 0):.1%}")
+        with col3:
+            st.metric("Min Confidence", f"{video_analysis.get('min_confidence', 0):.1%}")
+        
+        # Confidence timeline chart
+        if frame_results:
+            timestamps = [frame['timestamp'] for frame in frame_results]
+            confidences = [frame['analysis'].get('overall_analysis', {}).get('overall_confidence', 0.5) for frame in frame_results]
+            
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(
+                x=timestamps,
+                y=confidences,
+                mode='lines+markers',
+                name='Deepfake Confidence',
+                line=dict(color='red', width=2),
+                marker=dict(size=4)
+            ))
+            
+            # Add threshold line
+            threshold = video_analysis.get('confidence_threshold', 0.5)
+            fig.add_hline(y=threshold, line_dash="dash", line_color="orange", 
+                         annotation_text=f"Threshold ({threshold:.1%})")
+            
+            fig.update_layout(
+                title="Deepfake Confidence Over Time",
+                xaxis_title="Time (seconds)",
+                yaxis_title="Deepfake Confidence",
+                yaxis=dict(range=[0, 1]),
+                height=400
+            )
+            
+            st.plotly_chart(fig, width='stretch')
+        
+        # Frame-by-frame details
+        with st.expander("Frame-by-Frame Analysis"):
+            if frame_results:
+                # Create dataframe for frame results
+                frame_data = []
+                for frame in frame_results:
+                    analysis = frame['analysis'].get('overall_analysis', {})
+                    frame_data.append({
+                        'Frame': frame['frame_number'],
+                        'Time (s)': f"{frame['timestamp']:.2f}",
+                        'Confidence': f"{analysis.get('overall_confidence', 0):.1%}",
+                        'Is Deepfake': "Yes" if analysis.get('is_deepfake', False) else "No",
+                        'Models Used': analysis.get('total_models_used', 0)
+                    })
+                
+                df = pd.DataFrame(frame_data)
+                st.dataframe(df, width='stretch')
+            else:
+                st.write("No frame analysis data available")
+    
     def run(self):
         """Main application runner."""
         self.render_header()
@@ -618,36 +826,69 @@ class GenuineDeepFakeDetectionSystem:
         # Main content
         st.markdown('<div class="section-header">Upload Content for AI Analysis</div>', unsafe_allow_html=True)
         
-        # File upload
-        uploaded_file = st.file_uploader(
-            "Choose an image file",
-            type=['jpg', 'jpeg', 'png', 'bmp', 'tiff'],
-            help="Upload an image to analyze with our AI deep fake detection models"
-        )
-        
-        if uploaded_file is not None:
-            # Get file data once to avoid stream consumption issues
-            file_data = uploaded_file.getvalue()
+        # Dynamic file upload based on media type
+        if settings['media_type'] == 'Image':
+            uploaded_file = st.file_uploader(
+                "Choose an image file",
+                type=['jpg', 'jpeg', 'png', 'bmp', 'tiff'],
+                help="Upload an image to analyze with our AI deep fake detection models"
+            )
             
-            # Display uploaded image
-            col1, col2 = st.columns([2, 1])
+            if uploaded_file is not None:
+                # Get file data once to avoid stream consumption issues
+                file_data = uploaded_file.getvalue()
+                
+                # Display uploaded image
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.image(file_data, caption="Uploaded Image", width='stretch')
+                
+                with col2:
+                    with st.expander("File Details"):
+                        st.write(f"**Name:** {uploaded_file.name}")
+                        st.write(f"**Size:** {len(file_data):,} bytes")
+                        st.write(f"**Type:** {uploaded_file.type}")
+                
+                # Analysis button
+                if st.button("Analyze with AI Models", type="primary"):
+                    with st.spinner("Running AI deep fake detection models..."):
+                        results = self.process_image_with_ai_bytes(file_data, uploaded_file.name, settings)
+                        self.render_ai_results(results, "image")
+            else:
+                st.info("Upload an image to start AI-powered deep fake detection")
+                
+        else:  # Video mode
+            uploaded_file = st.file_uploader(
+                "Choose a video file",
+                type=['mp4', 'avi', 'mov', 'mkv', 'webm'],
+                help="Upload a video to analyze for deep fake content frame by frame"
+            )
             
-            with col1:
-                st.image(file_data, caption="Uploaded Image", use_container_width=True)
-            
-            with col2:
-                with st.expander("File Details"):
-                    st.write(f"**Name:** {uploaded_file.name}")
-                    st.write(f"**Size:** {len(file_data):,} bytes")
-                    st.write(f"**Type:** {uploaded_file.type}")
-            
-            # Analysis button
-            if st.button("Analyze with AI Models", type="primary"):
-                with st.spinner("Running AI deep fake detection models..."):
-                    results = self.process_image_with_ai_bytes(file_data, uploaded_file.name, settings)
-                    self.render_ai_results(results, "image")
-        else:
-            st.info("Upload an image to start AI-powered deep fake detection")
+            if uploaded_file is not None:
+                file_data = uploaded_file.getvalue()
+                
+                col1, col2 = st.columns([2, 1])
+                
+                with col1:
+                    st.video(file_data)
+                
+                with col2:
+                    with st.expander("Video Details"):
+                        st.write(f"**Name:** {uploaded_file.name}")
+                        st.write(f"**Size:** {len(file_data):,} bytes")
+                        st.write(f"**Type:** {uploaded_file.type}")
+                        st.write(f"**Frame Skip:** Every {settings['frame_skip']} frames")
+                        st.write(f"**Max Frames:** {settings['max_frames']} frames")
+                
+                # Analysis button
+                if st.button("Analyze Video with AI Models", type="primary"):
+                    with st.spinner(f"Analyzing video frames with AI models... (Processing up to {settings['max_frames']} frames)"):
+                        results = self.process_video_with_ai(file_data, uploaded_file.name, settings)
+                        self.render_video_results(results)
+            else:
+                st.info("Upload a video to start AI-powered deep fake detection")
+                st.write(f"**Current Settings:** Process every {settings['frame_skip']} frames, max {settings['max_frames']} frames")
             
             with st.expander("About This System"):
                 st.write("""
