@@ -1,16 +1,12 @@
 [server]
-# Configure for Replit environment - production security settings
 headless = true
 port = 5000
 address = "0.0.0.0"
 enableXsrfProtection = true
-# CORS will use default settings for security
 
 [browser]
-# Disable browser opening
 gatherUsageStats = false
 serverAddress = "0.0.0.0"
 
 [global]
-# Production optimizations
 showWarningOnDirectExecution = false
