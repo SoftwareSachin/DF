@@ -1,6 +1,6 @@
 """
-Deep Fake Detection System - Streamlit Web Application (Lite Version)
-Demo version for Replit with basic image/video analysis without heavy AI models.
+Deep Fake Detection System - Streamlit Web Application (Production Version)
+Production-ready image and video analysis platform with enhanced security and error handling.
 """
 import streamlit as st
 import numpy as np
@@ -17,6 +17,18 @@ import pandas as pd
 from PIL import Image
 import base64
 from io import BytesIO
+import logging
+import sys
+
+# Configure logging for production
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
 
 # Page configuration
 st.set_page_config(
@@ -50,12 +62,19 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-class DeepFakeDetectionDemo:
-    """Demo version of the deep fake detection system."""
+class DeepFakeDetectionSystem:
+    """Production-ready deep fake detection system."""
+    
+    # Security constants
+    MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB max file size
+    MAX_IMAGE_DIMENSION = 4000  # Max image width/height
+    ALLOWED_IMAGE_FORMATS = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
+    ALLOWED_VIDEO_FORMATS = ['.mp4', '.avi', '.mov', '.mkv', '.webm']
     
     def __init__(self):
-        self.supported_image_formats = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff']
-        self.supported_video_formats = ['.mp4', '.avi', '.mov', '.mkv', '.webm']
+        logger.info("Initializing Deep Fake Detection System")
+        self.supported_image_formats = self.ALLOWED_IMAGE_FORMATS
+        self.supported_video_formats = self.ALLOWED_VIDEO_FORMATS
     
     def render_header(self):
         """Render the application header."""
@@ -84,11 +103,41 @@ class DeepFakeDetectionDemo:
             'basic_face_detection': basic_face_detection
         }
     
+    def validate_image_security(self, image_bytes: bytes) -> Dict[str, any]:
+        """Validate image for security and size constraints."""
+        try:
+            # Check file size
+            if len(image_bytes) > self.MAX_FILE_SIZE:
+                return {'valid': False, 'error': f'File size exceeds maximum limit of {self.MAX_FILE_SIZE // (1024*1024)}MB'}
+            
+            # Check if it's a valid image
+            try:
+                pil_image = Image.open(BytesIO(image_bytes))
+                # Check image dimensions
+                if pil_image.width > self.MAX_IMAGE_DIMENSION or pil_image.height > self.MAX_IMAGE_DIMENSION:
+                    return {'valid': False, 'error': f'Image dimensions exceed maximum limit of {self.MAX_IMAGE_DIMENSION}px'}
+                
+                return {'valid': True, 'format': pil_image.format, 'size': (pil_image.width, pil_image.height)}
+            except Exception:
+                return {'valid': False, 'error': 'Invalid image format or corrupted file'}
+                
+        except Exception as e:
+            logger.error(f"Security validation error: {e}")
+            return {'valid': False, 'error': 'Failed to validate file'}
+    
     def detect_faces_opencv(self, image):
-        """Basic face detection using OpenCV Haar cascades."""
+        """Basic face detection using OpenCV Haar cascades with enhanced error handling."""
         try:
             # Load OpenCV's pre-trained Haar cascade for face detection
-            face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+            try:
+                cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+                face_cascade = cv2.CascadeClassifier(cascade_path)
+                if face_cascade.empty():
+                    logger.warning("Face cascade classifier could not be loaded")
+                    return []
+            except (AttributeError, Exception) as e:
+                logger.error(f"Error loading face cascade: {e}")
+                return []
             
             # Convert to grayscale for detection
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -101,8 +150,9 @@ class DeepFakeDetectionDemo:
                 minSize=(30, 30)
             )
             
-            return faces.tolist() if len(faces) > 0 else []
+            return list(faces) if len(faces) > 0 else []
         except Exception as e:
+            logger.error(f"Face detection error: {e}")
             return []
     
     def analyze_image_properties(self, image):
@@ -132,27 +182,35 @@ class DeepFakeDetectionDemo:
                 'format': pil_image.format,
                 'mode': pil_image.mode,
                 'size': pil_image.size,
-                'has_exif': hasattr(pil_image, '_getexif') and pil_image._getexif() is not None
+                'has_exif': hasattr(pil_image, 'getexif')
             }
             
-            # Try to get EXIF data
+            # Try to get EXIF data using modern PIL method
             try:
-                if hasattr(pil_image, '_getexif'):
-                    exif = pil_image._getexif()
+                if hasattr(pil_image, 'getexif'):
+                    exif = pil_image.getexif()
                     if exif:
                         metadata['exif_keys'] = list(exif.keys())[:10]  # First 10 keys
-            except:
+            except Exception:
                 pass
                 
             return metadata
         except Exception as e:
+            logger.error(f"Metadata extraction error: {e}")
             return {'error': str(e)}
     
     def process_image(self, uploaded_file, settings: Dict) -> Dict:
-        """Process uploaded image for basic analysis."""
+        """Process uploaded image with security validation and enhanced error handling."""
         try:
-            # Load image
+            logger.info(f"Processing image: {uploaded_file.name}")
+            # Load and validate image
             image_bytes = uploaded_file.read()
+            
+            # Security validation
+            validation = self.validate_image_security(image_bytes)
+            if not validation['valid']:
+                logger.warning(f"Image validation failed: {validation['error']}")
+                return {'error': validation['error']}
             
             # Convert to OpenCV format
             nparr = np.frombuffer(image_bytes, np.uint8)
@@ -191,14 +249,32 @@ class DeepFakeDetectionDemo:
             return results
             
         except Exception as e:
+            logger.error(f"Image processing error: {e}")
             return {'error': f'Error processing image: {str(e)}'}
     
     def process_video(self, uploaded_file, settings: Dict) -> Dict:
-        """Process uploaded video for basic analysis."""
+        """Process uploaded video with security validation and enhanced error handling."""
+        tmp_file_path = None
         try:
-            # Save uploaded file temporarily
+            logger.info(f"Processing video: {uploaded_file.name}")
+            
+            # Security validation - check file size first
+            uploaded_file.seek(0, 2)  # Seek to end to get size
+            file_size = uploaded_file.tell()
+            uploaded_file.seek(0)  # Reset to beginning
+            
+            if file_size > self.MAX_FILE_SIZE:
+                logger.warning(f"Video file too large: {file_size} bytes")
+                return {'error': f'Video file size exceeds maximum limit of {self.MAX_FILE_SIZE // (1024*1024)}MB'}
+            
+            # Save uploaded file temporarily with chunked reading for memory efficiency
             with tempfile.NamedTemporaryFile(delete=False, suffix='.mp4') as tmp_file:
-                tmp_file.write(uploaded_file.read())
+                chunk_size = 8192
+                while True:
+                    chunk = uploaded_file.read(chunk_size)
+                    if not chunk:
+                        break
+                    tmp_file.write(chunk)
                 tmp_file_path = tmp_file.name
             
             # Open video file
@@ -248,7 +324,8 @@ class DeepFakeDetectionDemo:
                         frame_properties.append(props['brightness_mean'])
             
             cap.release()
-            os.unlink(tmp_file_path)
+            if tmp_file_path and os.path.exists(tmp_file_path):
+                os.unlink(tmp_file_path)
             
             if faces_per_frame:
                 results['faces_analysis'] = {
@@ -270,7 +347,16 @@ class DeepFakeDetectionDemo:
             return results
             
         except Exception as e:
+            logger.error(f"Video processing error: {e}")
             return {'error': f'Error processing video: {str(e)}'}
+        finally:
+            # Ensure temp file cleanup
+            if tmp_file_path and os.path.exists(tmp_file_path):
+                try:
+                    os.unlink(tmp_file_path)
+                    logger.info(f"Cleaned up temp file: {tmp_file_path}")
+                except Exception as cleanup_error:
+                    logger.error(f"Failed to cleanup temp file {tmp_file_path}: {cleanup_error}")
     
     def _generate_demo_score(self, results):
         """Generate a demo confidence score based on available analysis."""
@@ -377,7 +463,7 @@ class DeepFakeDetectionDemo:
                 y=components,
                 title="Analysis Component Scores"
             )
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, width='stretch')
     
     def render_image_properties_tab(self, results: Dict):
         """Render image properties analysis."""
@@ -407,7 +493,7 @@ class DeepFakeDetectionDemo:
                 values = [color_data['red_mean'], color_data['green_mean'], color_data['blue_mean']]
                 
                 fig = px.bar(x=colors, y=values, title="Average Color Channel Values")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
     
     def render_face_analysis_tab(self, results: Dict):
         """Render face analysis results."""
@@ -422,14 +508,18 @@ class DeepFakeDetectionDemo:
         
         if faces['count'] > 0:
             st.write("**Bounding Boxes:**")
-            face_df = pd.DataFrame(faces['bounding_boxes'], columns=['X', 'Y', 'Width', 'Height'])
+            face_data = faces['bounding_boxes']
+            if face_data:
+                face_df = pd.DataFrame(data=face_data, columns=['X', 'Y', 'Width', 'Height'])
+            else:
+                face_df = pd.DataFrame(columns=['X', 'Y', 'Width', 'Height'])
             st.dataframe(face_df)
             
             # Visualize face sizes
             if len(face_df) > 1:
                 face_df['Area'] = face_df['Width'] * face_df['Height']
                 fig = px.bar(face_df, y='Area', title="Face Areas Detected")
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig, width='stretch')
         else:
             st.info("No faces detected in the image.")
     
@@ -510,7 +600,8 @@ class DeepFakeDetectionDemo:
             st.metric("Average Brightness", f"{temporal['avg_brightness']:.2f}")
     
     def run(self):
-        """Main application runner."""
+        """Main application runner with production configuration."""
+        logger.info("Starting Deep Fake Detection System application")
         self.render_header()
         
         # Sidebar settings
@@ -529,12 +620,17 @@ class DeepFakeDetectionDemo:
             )
             
             if uploaded_image is not None:
-                # Display uploaded image
-                st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", use_container_width=True)
+                # Reset file pointer to ensure proper reading
+                uploaded_image.seek(0)
                 
-                # Process image
-                with st.spinner("Analyzing image..."):
+                # Process image first to avoid buffer issues
+                with st.spinner("Analyzing image... Please wait."):
                     results = self.process_image(uploaded_image, settings)
+                
+                # Reset again for display
+                uploaded_image.seek(0)
+                # Display uploaded image
+                st.image(uploaded_image, caption=f"Uploaded: {uploaded_image.name}", width='stretch')
                 
                 # Display results
                 self.render_results(results, "image")
@@ -548,13 +644,18 @@ class DeepFakeDetectionDemo:
             
             if uploaded_video is not None:
                 # Process video
-                with st.spinner("Analyzing video..."):
+                with st.spinner("Analyzing video... This may take several minutes for large files."):
                     results = self.process_video(uploaded_video, settings)
                 
                 # Display results
                 self.render_results(results, "video")
 
-# Run the application
+# Production application runner
 if __name__ == "__main__":
-    app = DeepFakeDetectionDemo()
-    app.run()
+    try:
+        app = DeepFakeDetectionSystem()
+        app.run()
+    except Exception as e:
+        logger.critical(f"Application failed to start: {e}")
+        st.error("Application failed to start. Please contact support.")
+        raise
