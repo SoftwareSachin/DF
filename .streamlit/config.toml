@@ -1,0 +1,16 @@
+[server]
+# Configure for Replit environment
+headless = true
+port = 5000
+address = "0.0.0.0"
+enableCORS = false
+enableXsrfProtection = false
+
+[browser]
+# Disable browser opening
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+
+[global]
+# Replit optimizations
+showWarningOnDirectExecution = false
