@@ -26,6 +26,7 @@ from deepfake_models import (
     FrequencyDomainAnalyzer,
     MediaPipeFaceAnalyzer
 )
+from openai_deepfake_detector import EnsembleRealDeepFakeDetector
 
 # Configure logging for production
 logging.basicConfig(
@@ -50,29 +51,34 @@ st.markdown("""
 <style>
     .main-header {
         background: #ffffff;
-        border: 2px solid #e0e6ed;
-        padding: 1rem;
-        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        padding: 2rem;
+        margin-bottom: 2rem;
         text-align: center;
-        border-radius: 4px;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     }
     .main-header h1 {
-        color: #2c3e50;
-        font-weight: 600;
+        color: #111827;
+        font-weight: 700;
         margin: 0;
-        font-size: 2.2rem;
+        font-size: 2.5rem;
+        letter-spacing: -0.025em;
     }
     .main-header p {
-        color: #334155;
-        margin: 0.5rem 0 0 0;
-        font-size: 1rem;
+        color: #6b7280;
+        margin: 1rem 0 0 0;
+        font-size: 1.125rem;
         font-weight: 400;
+        line-height: 1.6;
     }
     .detection-result {
-        padding: 1.5rem;
-        margin: 1rem 0;
+        padding: 2rem;
+        margin: 1.5rem 0;
         background: #ffffff;
-        border: 1px solid #d1d9e0;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         border-radius: 4px;
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     }
@@ -155,11 +161,13 @@ class GenuineDeepFakeDetectionSystem:
     
     def __init__(self):
         logger.info("Initializing Genuine Deep Fake Detection System")
-        self.ensemble_detector = EnsembleDeepFakeDetector()
+        # Use real AI-powered detector with OpenAI vision model
+        self.real_ai_detector = EnsembleRealDeepFakeDetector()
         self.supported_image_formats = self.ALLOWED_IMAGE_FORMATS
         self.supported_video_formats = self.ALLOWED_VIDEO_FORMATS
         
-        # Initialize individual detectors for detailed analysis
+        # Keep lightweight detectors as backup
+        self.ensemble_detector = EnsembleDeepFakeDetector()
         self.efficientnet_detector = EfficientNetDeepFakeDetector()
         self.mobilenet_detector = MobileNetDeepFakeDetector()
         self.frequency_analyzer = FrequencyDomainAnalyzer()
@@ -169,9 +177,16 @@ class GenuineDeepFakeDetectionSystem:
         """Render the application header."""
         st.markdown("""
         <div class="main-header">
-            <h1>Deep Fake Detection System</h1>
+            <h1>Professional Deep Fake Detection System</h1>
+            <p>Advanced AI-Powered Image and Video Analysis Platform</p>
         </div>
         """, unsafe_allow_html=True)
+        
+        # Privacy notice
+        st.info("""
+        **Privacy Notice:** This system uses OpenAI's vision model for enhanced analysis. 
+        Uploaded images are processed securely and not stored permanently.
+        """)
     
     def render_sidebar(self):
         """Render the sidebar with detection model options."""
@@ -261,7 +276,11 @@ class GenuineDeepFakeDetectionSystem:
                 'analysis_details': {}
             }
             
-            # Ensemble detection (recommended)
+            # Real AI Detection (OpenAI GPT-5 Vision + Advanced CV) - PRIMARY
+            real_ai_result = self.real_ai_detector.predict(image)
+            results['ai_predictions']['real_ai_openai'] = real_ai_result
+            
+            # Ensemble detection (lightweight backup)
             if settings['use_ensemble']:
                 ensemble_result = self.ensemble_detector.detect_deepfake(image)
                 results['ai_predictions']['ensemble'] = ensemble_result
@@ -398,19 +417,40 @@ class GenuineDeepFakeDetectionSystem:
         confidences = []
         model_results = []
         
-        # Ensemble prediction (highest priority)
+        # Real AI OpenAI Detection (HIGHEST priority)
+        if 'real_ai_openai' in predictions:
+            real_ai_pred = predictions['real_ai_openai']
+            if 'error' not in real_ai_pred:
+                real_ai_conf = real_ai_pred['confidence']
+                confidences.append(real_ai_conf)
+                model_results.append({
+                    'model': 'OpenAI GPT-4o Vision + Computer Vision',
+                    'confidence': real_ai_conf,
+                    'weight': 0.7  # Highest weight for real AI
+                })
+            else:
+                # OpenAI failed, use only CV analysis with lower weight
+                cv_conf = real_ai_pred.get('ensemble_results', {}).get('computer_vision', {}).get('confidence', 0.5)
+                confidences.append(cv_conf)
+                model_results.append({
+                    'model': 'Computer Vision Analysis (OpenAI Failed)',
+                    'confidence': cv_conf,
+                    'weight': 0.3  # Lower weight when OpenAI unavailable
+                })
+        
+        # Ensemble prediction (backup)
         if 'ensemble' in predictions and 'error' not in predictions['ensemble']:
             ensemble_conf = predictions['ensemble']['ensemble_prediction']['confidence']
             confidences.append(ensemble_conf)
             model_results.append({
-                'model': 'Ensemble AI',
+                'model': 'Ensemble AI (Backup)',
                 'confidence': ensemble_conf,
-                'weight': 0.5
+                'weight': 0.2  # Reduced weight when real AI is available
             })
         
         # Individual model predictions
         for model_name, pred in predictions.items():
-            if model_name == 'ensemble' or 'error' in pred:
+            if model_name in ['ensemble', 'real_ai_openai'] or 'error' in pred:
                 continue
                 
             if model_name in ['efficientnet', 'mobilenet'] and 'confidence' in pred:
@@ -704,10 +744,68 @@ class GenuineDeepFakeDetectionSystem:
                 quality = face_analysis.get('quality_metrics', {})
                 st.write(f"**Detection Confidence:** {quality.get('avg_detection_confidence', 0):.3f}")
         
+        # Real AI Analysis (Featured)
+        if 'real_ai_openai' in predictions and 'error' not in predictions['real_ai_openai']:
+            real_ai = predictions['real_ai_openai']
+            st.subheader("Advanced AI Analysis (OpenAI GPT-4o Vision)")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric("Deepfake Confidence", f"{real_ai.get('confidence', 0):.1%}")
+                st.metric("Risk Level", real_ai.get('risk_level', 'Unknown').upper())
+            
+            with col2:
+                ensemble_results = real_ai.get('ensemble_results', {})
+                auth_analysis = ensemble_results.get('authenticity_analysis', {})
+                auth_score = auth_analysis.get('authenticity_score', 0.5)
+                st.metric("Authenticity Score", f"{auth_score:.1%}")
+                
+                image_type = auth_analysis.get('image_type', 'unknown')
+                st.write(f"**Detected Source:** {image_type.replace('_', ' ').title()}")
+            
+            with col3:
+                status = 'DEEPFAKE DETECTED' if real_ai.get('is_fake', False) else 'APPEARS AUTHENTIC'
+                confidence_color = "#dc2626" if real_ai.get('is_fake', False) else "#16a34a"
+                st.markdown(f"<div style='background: {confidence_color}20; border: 1px solid {confidence_color}; padding: 1rem; border-radius: 6px; text-align: center; color: {confidence_color}; font-weight: bold;'>{status}</div>", unsafe_allow_html=True)
+            
+            # Enhanced Analysis Details
+            if auth_analysis and 'error' not in auth_analysis:
+                st.write("**Enhanced Authenticity Analysis:**")
+                
+                quality_indicators = auth_analysis.get('quality_indicators', [])
+                if quality_indicators:
+                    st.write("**Quality Indicators:**")
+                    for indicator in quality_indicators:
+                        st.write(f"- {indicator}")
+                
+                recommendation = auth_analysis.get('recommendation', '')
+                if recommendation:
+                    st.info(f"**Recommendation:** {recommendation}")
+            
+            if 'explanation' in real_ai:
+                st.write("**Detailed Analysis:**")
+                st.write(real_ai['explanation'])
+            
+            # Show detailed breakdown
+            with st.expander("Detailed Technical Analysis"):
+                if ensemble_results:
+                    for analysis_type, result in ensemble_results.items():
+                        if 'error' not in result:
+                            st.write(f"**{analysis_type.replace('_', ' ').title()}:**")
+                            confidence = result.get('confidence', 0)
+                            st.write(f"- Confidence: {confidence:.3f}")
+                            
+                            if analysis_type == 'authenticity_analysis':
+                                detailed = result.get('detailed_analysis', {})
+                                for key, analysis in detailed.items():
+                                    if isinstance(analysis, dict) and 'assessment' in analysis:
+                                        st.write(f"  - {key.replace('_', ' ').title()}: {analysis['assessment']}")
+                            st.write("---")
+        
         # Individual Model Details
-        with st.expander("Individual Model Results"):
+        with st.expander("Traditional Model Results"):
             for model_name, pred in predictions.items():
-                if model_name == 'ensemble' or 'error' in pred:
+                if model_name in ['ensemble', 'real_ai_openai'] or 'error' in pred:
                     continue
                 
                 st.write(f"**{model_name.title()}:**")
