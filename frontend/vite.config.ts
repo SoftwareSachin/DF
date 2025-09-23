@@ -7,8 +7,15 @@ export default defineConfig({
   server: {
     host: '0.0.0.0',
     port: 3000,
+    strictPort: false,
+    // Allow all hosts for Replit proxy
+    allowedHosts: ['all'],
     proxy: {
       '/api': {
+        target: 'http://localhost:5000',
+        changeOrigin: true,
+      },
+      '/health': {
         target: 'http://localhost:5000',
         changeOrigin: true,
       },
@@ -17,5 +24,9 @@ export default defineConfig({
   preview: {
     host: '0.0.0.0',
     port: 3000,
+  },
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
   },
 })
