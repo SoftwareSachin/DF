@@ -40,8 +40,13 @@ detection_service = DeepFakeDetectionService()
 
 # Serve React frontend
 frontend_path = Path(__file__).parent.parent / "frontend" / "dist"
+
+# Mount static files first (with higher priority)
 if frontend_path.exists():
+    # Serve static assets
     app.mount("/assets", StaticFiles(directory=str(frontend_path / "assets")), name="assets")
+    # Serve other static files
+    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
 
 @app.get("/")
 async def serve_frontend():
@@ -50,6 +55,22 @@ async def serve_frontend():
     if index_path.exists():
         return FileResponse(str(index_path))
     return {"message": "Frontend not built. Run: npm run build in frontend directory"}
+
+@app.get("/favicon.ico")
+async def favicon():
+    """Serve favicon"""
+    favicon_path = frontend_path / "vite.svg"  # Use vite.svg as favicon
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    return {"message": "Favicon not found"}
+
+@app.get("/vite.svg")
+async def vite_logo():
+    """Serve vite logo"""
+    logo_path = frontend_path / "vite.svg"
+    if logo_path.exists():
+        return FileResponse(str(logo_path))
+    return {"message": "Logo not found"}
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
