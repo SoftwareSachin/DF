@@ -7,7 +7,7 @@ import numpy as np
 import cv2
 import tempfile
 import os
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 import time
 import json
 import plotly.graph_objects as go
@@ -228,7 +228,7 @@ class GenuineDeepFakeDetectionSystem:
             'max_frames': max_frames
         }
     
-    def validate_image_security(self, image_bytes: bytes) -> Dict[str, any]:
+    def validate_image_security(self, image_bytes: bytes) -> Dict[str, Any]:
         """Validate image for security and size constraints."""
         try:
             # Check file size
