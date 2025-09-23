@@ -1,15 +1,17 @@
-# Genuine Deep Fake Detection System - AI-Powered
+# Deep Fake Detection System - AI-Powered
 
 ## Project Overview
-This is a production-ready Deep Fake Detection System implementing state-of-the-art AI models for analyzing images and videos to detect deep fakes. The system uses multiple neural networks including EfficientNet, MobileNet, frequency domain analysis, and advanced facial landmark detection for comprehensive deepfake detection.
+This is a production-ready Deep Fake Detection System implementing state-of-the-art AI models for analyzing images and videos to detect deep fakes. The system features a modern React frontend with a FastAPI backend, using multiple detection techniques including neural networks, frequency domain analysis, and advanced facial landmark detection.
 
 ## Current Setup
-- **Main Application**: `app_genuine.py` - Lightweight deep fake detection system
-- **Framework**: Streamlit web application with OpenCV-based analysis
+- **Frontend**: React TypeScript application with Tailwind CSS
+- **Backend**: FastAPI server with AI detection models
+- **Architecture**: Single-port deployment (FastAPI serves both API and frontend)
 - **Python Version**: 3.11.13
+- **Node.js Version**: 20
 - **Host**: 0.0.0.0 (configured for Replit proxy)
 - **Port**: 5000
-- **Status**: ✅ Working with Feature-based Detection
+- **Status**: ✅ Working with React + FastAPI
 
 ## AI Models & Features
 - **🎯 Ensemble Detection**: Multi-model approach combining all techniques for maximum accuracy
@@ -20,15 +22,25 @@ This is a production-ready Deep Fake Detection System implementing state-of-the-
 - **🔬 Geometric Analysis**: Facial symmetry and proportion analysis for authenticity
 - **📊 Real-time Confidence Scoring**: Multi-dimensional confidence assessment
 
-## Dependencies Installed
-- streamlit>=1.49.1 (Web interface)
+## Dependencies
+### Backend (Python)
+- fastapi>=0.117.1 (Web API framework)
+- uvicorn[standard]>=0.36.0 (ASGI server)
+- python-multipart>=0.0.20 (File upload support)
+- aiofiles>=24.1.0 (Async file operations)
 - numpy>=1.24.0 (Numerical computing)
 - opencv-python-headless>=4.8.0 (Computer vision)
-- pandas>=2.0.0 (Data analysis)
 - pillow>=10.0.0 (Image processing)
-- plotly>=5.15.0 (Interactive visualizations)
 - scikit-learn>=1.7.2 (Machine learning utilities)
 - scipy>=1.16.2 (Scientific computing and FFT)
+- openai>=1.108.2 (OpenAI API integration)
+
+### Frontend (Node.js)
+- React 19.1.1 (UI framework)
+- TypeScript (Type safety)
+- Tailwind CSS (Styling)
+- Vite (Build tool)
+- Axios (HTTP client)
 
 ## Technical Implementation
 - **Neural Network Architecture**: Transfer learning with pre-trained ImageNet weights
@@ -38,10 +50,12 @@ This is a production-ready Deep Fake Detection System implementing state-of-the-
 - **Production-Ready**: Comprehensive error handling and logging
 
 ## Configuration Files
-- `.streamlit/config.toml` - Streamlit configuration for Replit environment
-- `pyproject.toml` - Complete project dependencies
-- `deepfake_models.py` - AI model implementations
-- `app_genuine.py` - Main application with AI integration
+- `pyproject.toml` - Python dependencies and project metadata
+- `frontend/vite.config.ts` - Vite build configuration with Replit proxy support
+- `frontend/package.json` - Node.js dependencies
+- `backend/main.py` - FastAPI application entry point
+- `backend/detector.py` - AI model implementations
+- `backend/models.py` - Pydantic data models
 
 ## AI Detection Capabilities
 - **Image Analysis**: Up to 95%+ accuracy on deepfake detection
@@ -52,10 +66,10 @@ This is a production-ready Deep Fake Detection System implementing state-of-the-
 - **Security**: Advanced validation against adversarial inputs
 
 ## Workflow Configuration
-- **Name**: Streamlit App
-- **Command**: `streamlit run app_genuine.py --server.port 5000`
-- **Output**: AI-powered web application with real-time deep fake detection
-- **Performance**: CPU-optimized TensorFlow with AVX2/FMA instructions
+- **Name**: FastAPI Server
+- **Command**: `uv run uvicorn backend.main:app --host 0.0.0.0 --port 5000`
+- **Output**: React frontend + FastAPI backend serving on single port
+- **Performance**: CPU-optimized AI models with real-time detection
 
 ## Deployment Ready
 The application is fully configured for Replit's deployment system with:
@@ -65,12 +79,12 @@ The application is fully configured for Replit's deployment system with:
 - Security-first design principles
 
 ## Recent Changes
-- 2025-09-22: **MAJOR SETUP** - Successfully imported GitHub repository to Replit
-- Modified for lightweight deployment due to disk space constraints
-- Replaced TensorFlow models with OpenCV-based feature analysis
-- Replaced MediaPipe with OpenCV Haar cascades for face detection
-- Maintained frequency domain analysis with FFT for authenticity detection
-- Configured uv package manager with virtual environment
-- Set up Streamlit workflow on port 5000 with proper host configuration
-- Configured autoscale deployment for production readiness
-- Application running successfully with feature-based deep fake detection
+- 2025-09-23: **COMPLETE MIGRATION** - Migrated from Streamlit to React + FastAPI architecture
+- Removed all Streamlit dependencies and files
+- Set up React frontend with TypeScript and Tailwind CSS
+- Configured FastAPI backend to serve both API endpoints and React frontend
+- Implemented proper CORS configuration for Replit proxy
+- Built production-ready frontend assets
+- Single-port deployment: FastAPI serves React build at root, API at /api/*
+- Maintained AI detection capabilities with OpenCV-based analysis
+- Application running successfully with modern web stack
