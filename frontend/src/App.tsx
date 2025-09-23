@@ -77,16 +77,16 @@ function App() {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Upload and Settings */}
-          <div className="lg:col-span-1 space-y-6">
+          <div className="lg:col-span-1 space-y-4">
             {/* Media Type Toggle */}
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
                 <button
                   onClick={() => setMediaType('image')}
-                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
                     mediaType === 'image'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'
@@ -96,7 +96,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setMediaType('video')}
-                  className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-colors ${
+                  className={`flex-1 py-1.5 px-3 text-sm font-medium rounded-md transition-colors ${
                     mediaType === 'video'
                       ? 'bg-white text-gray-900 shadow-sm'
                       : 'text-gray-600 hover:text-gray-900'

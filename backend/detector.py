@@ -11,14 +11,7 @@ import logging
 from PIL import Image
 from io import BytesIO
 
-from deepfake_models import (
-    EnsembleDeepFakeDetector,
-    EfficientNetDeepFakeDetector,
-    MobileNetDeepFakeDetector,
-    FrequencyDomainAnalyzer,
-    MediaPipeFaceAnalyzer
-)
-from openai_deepfake_detector import EnsembleRealDeepFakeDetector
+from .simple_detector import SimpleDetector, MockOpenAIDetector
 
 from .models import (
     DetectionResponse, DetectionSettings, MediaMetadata,
@@ -36,12 +29,18 @@ class DeepFakeDetectionService:
     def __init__(self):
         """Initialize detection models"""
         try:
-            self.ensemble_detector = EnsembleDeepFakeDetector()
-            self.efficientnet_detector = EfficientNetDeepFakeDetector()
-            self.mobilenet_detector = MobileNetDeepFakeDetector()
-            self.frequency_analyzer = FrequencyDomainAnalyzer()
-            self.face_analyzer = MediaPipeFaceAnalyzer()
-            self.openai_detector = EnsembleRealDeepFakeDetector()
+            # Load Haar cascade for face detection
+            cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
+            self.face_cascade = cv2.CascadeClassifier(cascade_path)
+            
+            # Initialize simplified detectors
+            self.ensemble_detector = SimpleDetector("ensemble")
+            self.efficientnet_detector = SimpleDetector("efficientnet")
+            self.mobilenet_detector = SimpleDetector("mobilenet")
+            self.frequency_analyzer = SimpleDetector("frequency")
+            self.face_analyzer = SimpleDetector("face")
+            self.openai_detector = MockOpenAIDetector()
+            
             logger.info("Detection models initialized successfully")
         except Exception as e:
             logger.error(f"Error initializing models: {e}")

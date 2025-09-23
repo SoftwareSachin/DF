@@ -25,13 +25,13 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
   ];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <div className="p-4 md:p-5 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">Detection Settings</h3>
         <p className="text-sm text-gray-600 mt-1">Configure AI models and analysis parameters</p>
       </div>
       
-      <div className="p-6 space-y-6">
+      <div className="p-4 md:p-5 space-y-4">
         {/* AI Models Section */}
         <div>
           <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center">
@@ -42,7 +42,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
           </h4>
           <div className="space-y-3">
             {modelOptions.map(({ key, label, description }) => (
-              <div key={key} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+              <div key={key} className="flex items-start space-x-3 p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div className="flex items-center h-5">
                   <input
                     type="checkbox"
@@ -80,7 +80,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
             step="0.05"
             value={settings.confidence_threshold}
             onChange={(e) => updateSetting('confidence_threshold', parseFloat(e.target.value))}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+            className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           />
           <div className="flex justify-between text-xs text-gray-500 mt-1">
             <span>Conservative</span>
@@ -110,7 +110,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
               step="1"
               value={settings.max_faces}
               onChange={(e) => updateSetting('max_faces', parseInt(e.target.value))}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
             />
           </div>
         )}
@@ -139,7 +139,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 step="1"
                 value={settings.frame_skip}
                 onChange={(e) => updateSetting('frame_skip', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
             
@@ -157,7 +157,7 @@ const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 step="10"
                 value={settings.max_frames}
                 onChange={(e) => updateSetting('max_frames', parseInt(e.target.value))}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
               />
             </div>
           </div>
