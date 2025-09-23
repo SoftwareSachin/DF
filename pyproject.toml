@@ -12,6 +12,8 @@ dependencies = [
     "plotly>=5.15.0",
     "scikit-learn>=1.7.2",
     "scipy>=1.16.2",
+    "openai>=1.108.2",
+    "opencv-python>=4.11.0.86",
 ]
 
 [[tool.uv.index]]
